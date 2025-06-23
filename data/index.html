@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Configuration</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: "Source Code Pro", monospace, monospace;
+        background-color: #0a0a0a;
+        color: #00ff00;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+        padding: 2rem;
+      }
+      .container {
+        background: #111;
+        border: 1px solid #00ff00;
+        border-radius: 8px;
+        width: 360px;
+        padding: 20px 25px;
+        box-shadow: 0 0 10px #00ff00aa, inset 0 0 5px #00ff0044;
+      }
+      h1 {
+        font-weight: 700;
+        font-size: 1.8rem;
+        margin-bottom: 15px;
+        text-align: center;
+        letter-spacing: 1.5px;
+      }
+      .wifi-list {
+        background: #020202;
+        border: 1px solid #00ff00aa;
+        max-height: 160px;
+        overflow-y: auto;
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 5px;
+        box-shadow: inset 0 0 6px #00ff0055;
+      }
+      .wifi-item {
+        padding: 8px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.25s ease;
+      }
+      .wifi-item:hover {
+        background-color: #004400;
+      }
+      .wifi-item.selected {
+        background-color: #007700;
+        font-weight: 700;
+        color: #ccffcc;
+      }
+      label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 0.85rem;
+        color: #00ff99;
+        letter-spacing: 0.05em;
+      }
+      input[type="password"],
+      input[type="text"],
+      input[type="tel"] {
+        width: 100%;
+        padding: 8px 12px;
+        border-radius: 5px;
+        border: 1px solid #00ff00aa;
+        background: #020202;
+        color: #00ff00;
+        font-family: monospace;
+        font-size: 1rem;
+        margin-bottom: 15px;
+        box-shadow: inset 0 0 5px #00ff0044;
+      }
+      .password-wrapper {
+        position: relative;
+      }
+      .toggle-pass {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        color: #00ff00;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 700;
+        user-select: none;
+      }
+      .mode {
+        margin-bottom: 20px;
+      }
+      .mode label {
+        margin-right: 15px;
+        cursor: pointer;
+      }
+      input[type="radio"] {
+        margin-right: 6px;
+        cursor: pointer;
+      }
+      button.connect-btn {
+        width: 100%;
+        background: #00ff00;
+        color: #000;
+        font-weight: 700;
+        padding: 12px 0;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.1rem;
+        cursor: pointer;
+        letter-spacing: 1.5px;
+        transition: background-color 0.3s ease;
+        box-shadow: 0 0 10px #00ff00bb;
+      }
+      button.connect-btn:hover {
+        background: #00cc00;
+        box-shadow: 0 0 14px #00ff00ee;
+      }
+      .wifi-list::-webkit-scrollbar {
+        width: 8px;
+      }
+      .wifi-list::-webkit-scrollbar-track {
+        background: #111;
+      }
+      .wifi-list::-webkit-scrollbar-thumb {
+        background: #00ff00aa;
+        border-radius: 4px;
+      }
+      .static-config {
+        background: #020202;
+        border: 1px solid #00ff00aa;
+        border-radius: 6px;
+        padding: 15px 12px;
+        margin-bottom: 15px;
+        box-shadow: inset 0 0 6px #00ff0055;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>WiFi Configuration</h1>
+      <div
+        id="wifiList"
+        class="wifi-list"
+        role="list"
+        aria-label="Available WiFi Networks"
+      ></div>
+
+      <label for="ssidInput">Selected SSID</label>
+      <input type="text" id="ssidInput" readonly />
+
+      <label for="passwordInput">Password</label>
+      <div class="password-wrapper">
+        <input type="password" id="passwordInput" />
+        <button
+          type="button"
+          class="toggle-pass"
+          aria-label="Toggle password visibility"
+        >
+          👁️
+        </button>
+      </div>
+
+      <div class="mode" role="radiogroup" aria-label="Select connection mode">
+        <label
+          ><input type="radio" name="mode" value="dynamic" checked />
+          Dynamic</label
+        >
+        <label><input type="radio" name="mode" value="static" /> Static</label>
+      </div>
+
+      <div id="staticConfigBox" style="display: none">
+        <label for="ipAddress">IP Address</label>
+        <input type="text" id="ipAddress" placeholder="192.168.1.10" />
+        <label for="gateway">Gateway</label>
+        <input type="text" id="gateway" placeholder="192.168.1.1" />
+        <label for="subnetMask">Subnet Mask</label>
+        <input type="text" id="subnetMask" placeholder="255.255.255.0" />
+      </div>
+
+      <button id="saveBtn">Save Configuration</button>
+      <div id="message"></div>
+    </div>
+
+    <script>
+      const wifiListEl = document.getElementById("wifiList");
+      const ssidInput = document.getElementById("ssidInput");
+      const passwordInput = document.getElementById("passwordInput");
+      const modeRadios = document.getElementsByName("mode");
+      const staticConfigBox = document.getElementById("staticConfigBox");
+      const ipAddressInput = document.getElementById("ipAddress");
+      const gatewayInput = document.getElementById("gateway");
+      const subnetMaskInput = document.getElementById("subnetMask");
+      const saveBtn = document.getElementById("saveBtn");
+      const messageEl = document.getElementById("message");
+
+      // Load WiFi list from /scan endpoint
+      async function loadWiFiList() {
+        try {
+          const res = await fetch("/scan");
+          const data = await res.json();
+          wifiListEl.innerHTML = "";
+          data.ssids.forEach((ssid) => {
+            const div = document.createElement("div");
+            div.textContent = ssid;
+            div.className = "wifi-item";
+            div.tabIndex = 0;
+            div.onclick = () => selectSSID(ssid);
+            wifiListEl.appendChild(div);
+          });
+        } catch (e) {
+          messageEl.textContent = "Gagal memuat daftar wifi";
+        }
+      }
+
+      function selectSSID(ssid) {
+        ssidInput.value = ssid;
+        // Highlight selected
+        [...wifiListEl.children].forEach((child) => {
+          child.classList.toggle("selected", child.textContent === ssid);
+        });
+      }
+
+      function updateStaticConfigVisibility() {
+        const mode = [...modeRadios].find((r) => r.checked).value;
+        staticConfigBox.style.display = mode === "static" ? "block" : "none";
+      }
+
+      [...modeRadios].forEach((radio) => {
+        radio.addEventListener("change", updateStaticConfigVisibility);
+      });
+
+      saveBtn.addEventListener("click", async () => {
+        if (!ssidInput.value) {
+          messageEl.textContent = "Silakan pilih SSID.";
+          return;
+        }
+        if (!passwordInput.value) {
+          messageEl.textContent = "Silakan masukan password.";
+          return;
+        }
+        const mode = [...modeRadios].find((r) => r.checked).value;
+
+        let postData = {
+          ssid: ssidInput.value,
+          password: passwordInput.value,
+          mode: mode,
+        };
+
+        if (mode === "static") {
+          postData.ip = ipAddressInput.value.trim();
+          postData.gateway = gatewayInput.value.trim();
+          postData.subnet = subnetMaskInput.value.trim();
+
+          const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+          if (
+            !ipRegex.test(postData.ip) ||
+            !ipRegex.test(postData.gateway) ||
+            !ipRegex.test(postData.subnet)
+          ) {
+            messageEl.textContent =
+              "Silakan masukkan IP, Gateway, dan Subnet Mask yang valid.";
+            return;
+          }
+        }
+
+        try {
+          const res = await fetch("/config", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams(postData),
+          });
+          const result = await res.json();
+          if (result.status === "ok") {
+            messageEl.textContent = "Menyimpan konfigurasi. Rebooting...";
+          } else {
+            messageEl.textContent = "Gagal menyimpan konfigurasi.";
+          }
+        } catch (e) {
+          messageEl.textContent = "Kesalahan mengirim konfigurasi";
+        }
+      });
+
+      updateStaticConfigVisibility();
+      loadWiFiList();
+      const togglePassBtn = document.querySelector(".toggle-pass");
+      const passwordInputEl = document.getElementById("passwordInput");
+
+      togglePassBtn.addEventListener("click", () => {
+        if (passwordInputEl.type === "password") {
+          passwordInputEl.type = "text";
+          togglePassBtn.textContent = "🙈";
+        } else {
+          passwordInputEl.type = "password";
+          togglePassBtn.textContent = "👁️";
+        }
+      });
+    </script>
+  </body>
+</html>
